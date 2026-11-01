@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Geo: Khoa Thi Kiến Thức (Tháng 11 - Văn Hóa VN)</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --vn-gold: #FFD700; 
+            --vn-gold-dark: #B8860B;
+            --vn-red: #8B0000;
+            --vn-red-light: #B22222;
+            --vn-paper: #FDF5E6;
+            --cyan: #00e5ff; 
+            --success: #00e676; 
+            --danger: #ff1744; 
+            --orange: #ff9100;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Times New Roman', serif; user-select: none; touch-action: manipulation; }
+        body { background-color: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; overflow: hidden; overscroll-behavior-y: none; }
+        
+        #bg-layer {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2;
+            background: url('https://images.unsplash.com/photo-1506869640319-fea1a2f10887?auto=format&fit=crop&q=80') center/cover no-repeat;
+            opacity: 0.5;
+        }
+        #bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+            background: radial-gradient(circle at center, rgba(92, 0, 0, 0.7) 0%, rgba(26, 0, 0, 0.9) 100%);
+        }
+        
+        #bg-overlay::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 120vh; height: 120vh; 
+            background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Dong_Son_drum_pattern.svg/1024px-Dong_Son_drum_pattern.svg.png') center/contain no-repeat;
+            opacity: 0.1; z-index: -1; animation: spinDrum 150s linear infinite; filter: drop-shadow(0 0 10px var(--vn-gold));
+        }
+        @keyframes spinDrum { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        #app-container { 
+            width: 100%; max-width: 450px; height: 100%; max-height: 850px; position: relative; 
+            background: rgba(30, 0, 0, 0.6); backdrop-filter: blur(5px);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.2); overflow: hidden; border: 2px solid var(--vn-gold-dark); 
+        }
+        @media (min-width: 450px) { #app-container { border-radius: 8px; } }
+
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; text-align: center; z-index: 10; overflow-y: auto; padding-bottom: 20px;}
+        .active-screen { display: flex !important; }
+        
+        #login-screen { justify-content: center; padding: 20px; background: rgba(0,0,0,0.4); }
+        #game-screen { justify-content: flex-start; padding: 80px 15px 150px 15px; } 
+
+        h1 { color: var(--vn-gold); font-weight: 900; font-size: 28px; text-shadow: 2px 2px 4px #000, 0 0 20px var(--vn-gold-dark); margin-bottom: 5px; text-transform: uppercase; font-family: 'Times New Roman', serif; letter-spacing: 1px;}
+        .subtitle { color: var(--vn-paper); font-size: 13px; font-weight: bold; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 1px 1px 2px #000; border-bottom: 1px solid var(--vn-gold); padding-bottom: 10px;}
+        
+        .mascot-intro { display: flex; align-items: center; gap: 12px; background: rgba(139, 0, 0, 0.8); border: 2px solid var(--vn-gold); border-radius: 8px; padding: 12px; margin-bottom: 20px; width: 100%; max-width: 400px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.5);}
+        .mascot-img { width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--vn-gold); background: #330000; flex-shrink: 0; box-shadow: 0 0 15px var(--vn-gold); display: flex; justify-content: center; align-items: center; font-size: 40px; }
+        .mascot-bubble { font-size: 14px; color: var(--vn-paper); line-height: 1.4;}
+        .mascot-bubble b { color: var(--vn-gold); }
+        
+        .input-group { margin-bottom: 12px; width: 100%; max-width: 400px; }
+        .input-group input { width: 100%; padding: 14px; background: rgba(253, 245, 230, 0.1); border: 1px solid var(--vn-gold); color: var(--vn-gold); border-radius: 4px; font-size: 15px; font-weight: bold; text-align: center; outline: none; transition: 0.3s;}
+        .input-group input:focus { background: rgba(253, 245, 230, 0.2); box-shadow: 0 0 10px var(--vn-gold);}
+        
+        .action-btn { width: 100%; max-width: 400px; padding: 15px; background: linear-gradient(to bottom, #B22222, #8B0000); color: var(--vn-gold); border: 2px solid var(--vn-gold); border-radius: 4px; font-size: 16px; font-weight: 900; cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.8); margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;}
+        .action-btn:active { transform: scale(0.95); }
+
+        .lotus-decor { font-size: 50px; opacity: 0.6; margin-top: auto; padding-top: 20px; filter: drop-shadow(0 0 10px var(--vn-red)); }
+
+        .top-hud { position: fixed; top: 15px; left: 15px; width: calc(100% - 65px); display: flex; justify-content: space-between; align-items: flex-start; z-index: 20; max-width: 370px;}
+        .hud-box { background: rgba(139, 0, 0, 0.9); border: 2px solid var(--vn-gold); padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; color: var(--vn-gold); display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px #000;}
+        .hud-box span.val { color: var(--vn-paper); font-size: 15px;}
+        #mute-btn { position: fixed; top: 15px; right: 15px; background: rgba(139, 0, 0, 0.9); border: 2px solid var(--vn-gold); border-radius: 50%; width: 40px; height: 40px; color: var(--vn-gold); z-index: 100; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px #000;}
+        
+        #timer-bar-container { width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-top: 15px; overflow: hidden; display: none; box-shadow: inset 0 0 5px #000; border: 1px solid var(--vn-gold-dark);}
+        #timer-bar { width: 100%; height: 100%; background: var(--vn-gold); transition: width 1s linear, background-color 0.3s; }
+        .timer-warning { background: var(--danger) !important; box-shadow: 0 0 10px var(--danger); }
+
+        .question-board { width: 100%; max-width: 400px; background: rgba(20, 5, 0, 0.9); border: 2px solid var(--vn-gold); border-radius: 8px; padding: 20px 15px 25px 15px; margin-top: 10px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; height: max-content; margin-bottom: 10px; z-index: 5;}
+        .topic-badge { display: inline-block; background: var(--vn-red); padding: 5px 20px; border-radius: 4px; font-size: 13px; font-weight: bold; border: 1px solid var(--vn-gold); color: var(--vn-gold); margin-top: -32px; margin-bottom: 10px; box-shadow: 0 5px 10px rgba(0,0,0,0.8); z-index: 2; text-transform: uppercase;}
+        .q-text { font-size: 16px; font-weight: bold; line-height: 1.5; color: var(--vn-paper); margin-bottom: 20px; text-align: justify; width: 100%; font-family: 'Times New Roman', serif;}
+        
+        .auction-panel { width: 100%; display: flex; flex-direction: column; gap: 10px;}
+        .bet-btn { width: 100%; padding: 14px; border-radius: 4px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; display: flex; justify-content: space-between; align-items: center; font-family: 'Segoe UI', sans-serif;}
+        .bet-btn span.tag { font-size: 11px; font-weight: normal; opacity: 0.9;}
+        .bet-100 { background: rgba(0,229,255,0.1); border-color: var(--cyan); color: var(--cyan); }
+        .bet-300 { background: rgba(255,145,0,0.1); border-color: var(--orange); color: var(--orange); }
+        .bet-500 { background: rgba(255,23,68,0.1); border-color: var(--danger); color: var(--danger); }
+
+        .task-panel { display: none; width: 100%; flex-direction: column; gap: 12px; animation: slideUp 0.3s ease;}
+        @keyframes slideUp { from{opacity:0; transform:translateY(15px);} to{opacity:1; transform:translateY(0);} }
+        .task-title { font-size: 13px; color: var(--vn-gold); font-weight: bold; text-align: left; margin-bottom: 5px; border-bottom: 1px dashed var(--vn-gold-dark); padding-bottom: 5px;}
+        
+        .ans-btn { width: 100%; padding: 12px; background: rgba(0,0,0,0.6); border: 1px solid var(--vn-gold-dark); border-radius: 4px; color: var(--vn-paper); text-align: left; font-size: 14px; line-height: 1.4; cursor: pointer; transition: 0.2s; font-family: 'Segoe UI', sans-serif;}
+        .ans-btn.selected { border-color: var(--vn-gold); background: rgba(255,215,0,0.2); font-weight: bold; box-shadow: 0 0 10px rgba(255,215,0,0.2); color: var(--vn-gold);}
+        #reason-list .ans-btn { padding: 10px; font-size: 13px; }
+        
+        .input-subtask { width: 100%; padding: 14px; background: rgba(0,0,0,0.8); border: 1px solid var(--orange); color: #fff; border-radius: 4px; font-size: 15px; outline: none; text-align: center;}
+
+        #live-mascot-container { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; z-index: 50; width: 100%; max-width: 450px; pointer-events: none; }
+        .live-mascot-img { width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--vn-gold); background: #330000; box-shadow: 0 0 20px var(--vn-gold); display: flex; justify-content: center; align-items: center; font-size: 45px; transition: all 0.3s ease; }
+        .live-mascot-bubble { background: rgba(139, 0, 0, 0.9); border: 2px solid var(--vn-gold); border-radius: 8px; padding: 10px 15px; font-size: 13px; font-weight: bold; color: var(--vn-gold); margin-bottom: 10px; max-width: 85%; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.8);}
+
+        #bet-result-modal { background: rgba(0,0,0,0.92); z-index: 60;}
+        .result-box { background: rgba(30, 5, 0, 0.95); border: 2px solid; border-radius: 8px; padding: 25px 20px; width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 0 40px rgba(0,0,0,0.9);}
+        .win { border-color: var(--vn-gold); box-shadow: 0 0 40px rgba(255,215,0,0.3);}
+        .lose { border-color: var(--danger); box-shadow: 0 0 40px rgba(255,23,68,0.4);}
+        
+        .history-box { width: 100%; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.6); border: 1px solid var(--vn-gold-dark); border-radius: 4px; padding: 10px; text-align: left; margin-bottom: 10px; font-size: 12px; font-family: 'Segoe UI', sans-serif;}
+        .hist-item { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed rgba(255,215,0,0.3);}
+        .hist-item.danger { color: #ff5252; }
+        .hist-item.safe { color: var(--vn-gold); }
+
+        .power-card { width: 100%; border-radius: 8px; padding: 20px 15px; margin-bottom: 15px; position: relative; overflow: hidden; display: none; flex-direction: column; align-items: center; text-align: center; font-family: 'Segoe UI', sans-serif;}
+        .power-card::after { position: absolute; font-size: 80px; opacity: 0.1; right: 0px; top: 10px; z-index: 1; line-height: 1;}
+        .black-card { background: linear-gradient(135deg, #111, #000); border: 2px solid var(--vn-gold); box-shadow: 0 0 20px rgba(255,215,0,0.5), inset 0 0 15px rgba(255,215,0,0.3); }
+        .black-card::after { content: '⚡'; opacity: 0.2; color: var(--vn-gold);}
+        .silver-card { background: linear-gradient(135deg, #e0e0e0, #757575); border: 2px solid #fff; box-shadow: 0 0 20px rgba(255,255,255,0.5), inset 0 0 15px rgba(255,255,255,0.8); }
+        .silver-card::after { content: '🛡️'; }
+        .card-title { font-size: 18px; font-weight: 900; margin-bottom: 12px; text-transform: uppercase; z-index: 2; letter-spacing: 1px;}
+        .black-card .card-title { color: var(--vn-gold); text-shadow: 0 0 10px var(--vn-gold); }
+        .silver-card .card-title { color: #111; text-shadow: 0 1px 1px #fff; }
+        .card-desc { font-size: 13px; margin-bottom: 12px; z-index: 2; font-weight: bold; line-height: 1.4; padding: 0 5px;}
+        .black-card .card-desc { color: #fff; }
+        .silver-card .card-desc { color: #000; }
+        .reward-select { width: 100%; padding: 12px; background: rgba(0,0,0,0.9); border: 1px solid var(--vn-gold); color: var(--vn-gold); border-radius: 4px; font-size: 13px; outline: none; z-index: 2; font-weight: bold; cursor: pointer;}
+        .silver-card .reward-display { background: rgba(255,255,255,0.9); color: #000; padding: 12px; border-radius: 4px; font-weight: 900; font-size: 13px; z-index: 2; width: 100%; border: 2px solid #555;}
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer"></div>
+    <div id="bg-overlay"></div>
+
+    <!-- AUDIO ASSETS (Preload none để không block tải trang) -->
+    <audio id="bgm-menu" src="https://actions.google.com/sounds/v1/science_fiction/dark_ambient_loop.ogg" loop preload="none"></audio>
+    <audio id="bgm-game" src="https://actions.google.com/sounds/v1/science_fiction/sci_fi_chase_fast.ogg" loop preload="none"></audio>
+    <audio id="sfx-coin" src="https://actions.google.com/sounds/v1/science_fiction/power_up.ogg" preload="none"></audio> 
+    <audio id="sfx-lose" src="https://actions.google.com/sounds/v1/foley/debris_crunch.ogg" preload="none"></audio>
+    <audio id="sfx-heartbeat" src="https://actions.google.com/sounds/v1/foley/heartbeat_fast.ogg" loop preload="none"></audio>
+    <audio id="sfx-click" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="none"></audio>
+    <audio id="sfx-cheer" src="https://actions.google.com/sounds/v1/crowds/female_cheer.ogg" preload="none"></audio>
+    <audio id="sfx-alarm" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="none"></audio>
+
+    <div id="app-container">
+        <!-- LOBBY - MÀN HÌNH ĐẦU TIÊN (Đã bỏ màn hình yêu cầu âm thanh) -->
+        <div id="login-screen" class="screen active-screen">
+            <div style="font-size: 40px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--vn-gold));">📜</div>
+            <h1>ĐẤU GIÁ KIẾN THỨC</h1>
+            <div class="subtitle">KHOA THI THÁNG 11 - VĂN HÓA VIỆT NAM</div>
+            
+            <div class="mascot-intro">
+                <div class="mascot-img">👲</div>
+                <div class="mascot-bubble">
+                    💬 <b>Quan Chủ Khảo:</b> "Sĩ tử được cấp <b>1000 XU</b> lộ phí.<br>⚡ Lãi từ 3000 XU: <b>Thẻ Đen (Tự chọn)</b><br>🛡️ Lãi 1500 - 2999 XU: <b>Thẻ Bạc (Rút ngẫu nhiên)</b>"
+                </div>
+            </div>
+
+            <div class="input-group"><input type="text" id="player-name" placeholder="Danh xưng sĩ tử (Họ Tên)" autocomplete="off"></div>
+            <div class="input-group"><input type="text" id="player-class" placeholder="Thuộc phủ/huyện (Lớp)" autocomplete="off"></div>
+            
+            <button class="action-btn" id="start-btn">ỨNG THÍ NGAY</button>
+            <div class="lotus-decor">🪷</div>
+        </div>
+
+        <!-- GAMEPLAY -->
+        <div id="game-screen" class="screen">
+            <div class="top-hud">
+                <div class="hud-box">💰 TÀI SẢN: <span class="val" id="wallet-display">1000</span></div>
+                <div class="hud-box">CÂU: <span class="val" id="q-counter">1/10</span></div>
+            </div>
+            <button id="mute-btn">🔊</button>
+            
+            <div class="question-board">
+                <div class="topic-badge" id="q-topic">DÂN SỐ</div>
+                <div class="q-text" id="q-text">Vấn đề hiển thị ở đây...</div>
+                
+                <div id="timer-bar-container"><div id="timer-bar"></div></div>
+
+                <div class="auction-panel" id="bet-panel">
+                    <div style="font-size: 12px; color: #ccc; margin-bottom: 5px; font-family: 'Segoe UI', sans-serif;">Thời gian đếm ngược chỉ chạy khi bạn chốt cược:</div>
+                    <button class="bet-btn bet-100" onclick="selectBet(100)">🪙 100 XU <span class="tag">(Cơ bản - 10s)</span></button>
+                    <button class="bet-btn bet-300" onclick="selectBet(300)">💰 300 XU <span class="tag">(Gõ Phím - 20s)</span></button>
+                    <button class="bet-btn bet-500" onclick="selectBet(500)">💎 500 XU <span class="tag">(Gõ + Lập luận - 30s)</span></button>
+                </div>
+
+                <div class="task-panel" id="task-panel">
+                    <div class="task-title" id="task-title">XÁC THỰC THÔNG TIN</div>
+                    
+                    <div id="task-100" style="display:none; width: 100%; flex-direction: column; gap:8px;">
+                        <button class="ans-btn" onclick="submitAnswer('true')" style="text-align:center;">✅ Nhận định này ĐÚNG</button>
+                        <button class="ans-btn" onclick="submitAnswer('false')" style="text-align:center;">❌ Nhận định này SAI</button>
+                    </div>
+
+                    <div id="task-300" style="display:none; width: 100%; flex-direction: column; gap:8px;">
+                        <div style="font-size: 13px; color: var(--vn-gold);" id="subtask-q-300">Nhiệm vụ phụ</div>
+                        <input type="text" class="input-subtask" id="subtask-input-300" placeholder="Gõ từ khóa..." autocomplete="off">
+                        <div style="display:flex; gap:8px;">
+                            <button class="ans-btn" style="text-align:center; background:rgba(0,230,118,0.2); border-color:var(--success); color:var(--success);" onclick="submitAnswer300('true')">Gửi & ĐÚNG</button>
+                            <button class="ans-btn" style="text-align:center; background:rgba(255,23,68,0.2); border-color:var(--danger); color:var(--danger);" onclick="submitAnswer300('false')">Gửi & SAI</button>
+                        </div>
+                    </div>
+
+                    <div id="task-500" style="display:none; width: 100%; flex-direction: column; gap:6px;">
+                        <div style="font-size: 13px; color: var(--vn-gold);" id="subtask-q-500">Nhiệm vụ phụ</div>
+                        <input type="text" class="input-subtask" id="subtask-input-500" placeholder="Gõ từ khóa..." autocomplete="off">
+                        
+                        <div style="font-size: 12px; color: var(--vn-paper); margin-top: 5px;">Và chọn 1 luận điểm cốt lõi để bảo vệ:</div>
+                        <div id="reason-list" style="display:flex; flex-direction: column; gap:6px;"></div>
+                        <button class="action-btn" style="padding: 12px; font-size:14px;" onclick="submitAnswer500()">CHỐT LỜI 500 XU!</button>
+                    </div>
+                </div>
+            </div>
+            <div class="lotus-decor" style="font-size: 30px; opacity: 0.3; padding-top: 10px;">🪷</div>
+        </div>
+
+        <div id="live-mascot-container">
+            <div class="live-mascot-bubble" id="live-mascot-bubble">Nở hoa hay bế tắc? Sĩ tử chọn đi!</div>
+            <div class="live-mascot-img" id="live-mascot-img">🤔</div>
+        </div>
+
+        <div id="bet-result-modal" class="screen">
+            <div class="result-box" id="res-box">
+                <div class="mascot-img" id="res-mascot" style="width: 75px; height: 75px; margin-bottom: 10px; font-size: 45px; border-color: var(--vn-gold); box-shadow: 0 0 20px var(--vn-gold);">🤩</div>
+                <div style="font-size: 24px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; font-family: 'Times New Roman', serif;" id="res-title">NỞ HOA!</div>
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 15px; font-family: 'Segoe UI', sans-serif;" id="res-coin-text">+300 XU</div>
+                <div style="font-size: 14px; color: var(--vn-paper); margin-bottom: 20px; line-height: 1.5; font-family: 'Segoe UI', sans-serif;" id="res-detail">Giải thích...</div>
+                <button class="action-btn" style="padding:14px;" onclick="nextQuestion()">TIẾP TỤC ỨNG THÍ</button>
+            </div>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <div class="result-box" id="capture-area" style="background: rgba(30,5,0,1); border-color: var(--vn-gold); padding: 20px;">
+                <div class="mascot-img" style="border-color:var(--vn-gold); margin-bottom:10px; width:65px; height:65px; font-size:35px;">📜</div>
+                <h1 style="font-size: 22px;">BẢNG VÀNG GHI DANH</h1>
+                <p id="final-agent" style="color: var(--vn-gold); font-weight: bold; font-size: 14px; margin-bottom: 10px; font-family: 'Segoe UI', sans-serif;"></p>
+                <div class="hud-box" style="margin-bottom: 15px; font-size: 15px;">TÀI SẢN CUỐI: <span id="final-wallet" style="color:var(--vn-paper); margin-left: 5px;">0</span> XU</div>
+                <div id="final-bonus" style="font-size: 14px; font-weight: 900; margin-bottom: 15px; color: var(--vn-gold); font-family: 'Segoe UI', sans-serif;"></div>
+                
+                <div id="power-card-container" style="width: 100%;">
+                    <div id="black-card" class="power-card black-card">
+                        <div class="card-title">THẺ ĐEN TỐI THƯỢNG</div>
+                        <div class="card-desc">Sĩ tử được quyền TỰ CHỌN 1 trong 4 đặc quyền bảo hộ:</div>
+                        <select id="privilege-select" class="reward-select">
+                            <option value="1">+0.5 điểm trực tiếp vào cột điểm Thường xuyên tiếp theo.</option>
+                            <option value="2">Bỏ qua lỗi tô mã đề khi làm bài kiểm tra giấy.</option>
+                            <option value="3">Bỏ qua lỗi tô sai phần Trả lời ngắn (tính đúng).</option>
+                            <option value="4">Hủy 1 đầu điểm kiểm tra Thường xuyên thấp nhất.</option>
+                        </select>
+                    </div>
+                    <div id="silver-card" class="power-card silver-card">
+                        <div class="card-title">THẺ BẠC HỘ VỆ</div>
+                        <div class="card-desc">Hệ thống ban ngẫu nhiên 1 đặc quyền bảo hộ cho sĩ tử:</div>
+                        <div id="silver-privilege" class="reward-display">Đang quay...</div>
+                    </div>
+                </div>
+
+                <div class="history-box">
+                    <div style="color: var(--vn-gold); font-weight:900; margin-bottom:8px; border-bottom:1px solid var(--vn-gold-dark); padding-bottom:5px;">LỊCH SỬ KHOA THI:</div>
+                    <div id="history-list"></div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; width: 100%;" data-html2canvas-ignore="true">
+                    <button class="action-btn" id="capture-btn" style="background: rgba(216,67,21,0.2); border: 2px solid var(--vn-gold); color: var(--vn-gold); box-shadow: none; padding: 12px; font-size: 14px;">📸 LẤY CHỨNG CHỈ</button>
+                    <button class="action-btn" id="restart-btn" style="background: #333; border-color:#555; color:#fff; padding: 12px; font-size: 14px;">THI LẠI</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioUrls = {
+            'bgm-menu': 'https://actions.google.com/sounds/v1/science_fiction/dark_ambient_loop.ogg',
+            'bgm-game': 'https://actions.google.com/sounds/v1/science_fiction/sci_fi_chase_fast.ogg',
+            'sfx-coin': 'https://actions.google.com/sounds/v1/science_fiction/power_up.ogg',
+            'sfx-lose': 'https://actions.google.com/sounds/v1/foley/debris_crunch.ogg',
+            'sfx-heartbeat': 'https://actions.google.com/sounds/v1/foley/heartbeat_fast.ogg',
+            'sfx-click': 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg',
+            'sfx-cheer': 'https://actions.google.com/sounds/v1/crowds/female_cheer.ogg',
+            'sfx-alarm': 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Khởi tạo source âm thanh ngầm
+            for (const [id, url] of Object.entries(audioUrls)) {
+                const el = document.getElementById(id);
+                if (el) el.src = url;
+            }
+
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('mute-btn').addEventListener('click', () => {
+                isMuted = !isMuted; 
+                document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊";
+                for (const id in audioUrls) {
+                    let a = document.getElementById(id); 
+                    if(a) a.muted = isMuted;
+                }
+            });
+        });
+
+        let isMuted = false;
+
+        function playSFX(id, vol=1) { if(!isMuted) { let orig = document.getElementById(id); if(orig){ let clone = orig.cloneNode(); clone.volume = vol; clone.play().catch(()=>{}); } } }
+        function playBGM(id, vol=0.5) { if(!isMuted) { let a = document.getElementById(id); if(a) { a.volume = vol; if(a.paused) a.play().catch(()=>{}); } } }
+        function stopBGM(id) { let a = document.getElementById(id); if(a) { a.pause(); a.currentTime = 0; } }
+
+        function changeLiveMascot(state) {
+            const mascot = document.getElementById('live-mascot-img');
+            const bubble = document.getElementById('live-mascot-bubble');
+            
+            switch(state) {
+                case 'idle':
+                    mascot.innerText = '🤔'; mascot.style.borderColor = 'var(--vn-gold)'; mascot.style.boxShadow = '0 0 15px var(--vn-gold)';
+                    bubble.innerHTML = "Nở hoa hay bế tắc? Sĩ tử chọn đi!";
+                    break;
+                case 'bet100':
+                    mascot.innerText = '😎'; mascot.style.borderColor = 'var(--cyan)'; mascot.style.boxShadow = '0 0 15px var(--cyan)';
+                    bubble.innerHTML = "100 xu? Nhanh tay chốt lãi bảo toàn vốn nào!";
+                    break;
+                case 'bet300':
+                    mascot.innerText = '🧐'; mascot.style.borderColor = 'var(--orange)'; mascot.style.boxShadow = '0 0 15px var(--orange)';
+                    bubble.innerHTML = "300 xu! Viết từ khóa cho cẩn thận, sai chính tả là hỏng việc!";
+                    break;
+                case 'bet500':
+                    mascot.innerText = '😰'; mascot.style.borderColor = 'var(--danger)'; mascot.style.boxShadow = '0 0 20px var(--danger)';
+                    bubble.innerHTML = "Trời ơi 500 xu! 30 giây để phân tích và viết chữ! Áp lực quá!";
+                    break;
+            }
+        }
+
+        // BỘ DỮ LIỆU ĐỊA LÍ (25 CÂU)
+        const rawData = [
+            { topic: "QUY MÔ", text: "Quy mô dân số Việt Nam hiện nay đang có xu hướng tăng nhanh trở lại do điều kiện y tế phát triển mạnh.", isTrue: false, subtaskQ: "Xu hướng thực sự của gia tăng tự nhiên là (tăng/giảm)?", subtaskA: "giảm", reasons: [ {text: "Đúng, y tế cải thiện làm giảm tỉ suất tử, dẫn đến gia tăng dân số.", isCorrect: false}, {text: "Sai, dân số vẫn tăng nhưng quy mô có xu hướng tăng chậm lại.", isCorrect: true}, {text: "Sai, dân số VN đã bước vào giai đoạn suy giảm âm.", isCorrect: false} ], detail: "Dân số tăng nhưng TĂNG CHẬM LẠI." },
+            { topic: "CƠ CẤU", text: "Việt Nam đang trong thời kỳ 'cơ cấu dân số vàng' nhưng đồng thời cũng phải đối mặt với già hóa dân số diễn ra nhanh.", isTrue: true, subtaskQ: "Nhóm tuổi nào đang tăng tỉ trọng nhanh nhất (trẻ/già)?", subtaskA: "già", reasons: [ {text: "Sai, cơ cấu vàng thì không thể xảy ra già hóa.", isCorrect: false}, {text: "Đúng, lao động chiếm đa số nhưng nhóm trên 65 tuổi tăng rất nhanh.", isCorrect: true}, {text: "Đúng, nguyên nhân do mức sinh tự nhiên tăng đột biến.", isCorrect: false} ], detail: "Tốc độ già hóa của VN thuộc nhóm nhanh nhất thế giới." },
+            { topic: "PHÂN BỐ", text: "Đồng bằng sông Cửu Long là vùng có mật độ dân số cao nhất cả nước hiện nay, thuận lợi cho phát triển kinh tế.", isTrue: false, subtaskQ: "Vùng nào mới có mật độ DS cao nhất nước ta?", subtaskA: "đồng bằng sông hồng", reasons: [ {text: "Sai, Đồng bằng sông Hồng mới là vùng có mật độ cao nhất.", isCorrect: true}, {text: "Đúng, vì đây là vựa lúa lớn nhất, tập trung nông dân đông.", isCorrect: false}, {text: "Sai, Đông Nam Bộ mới là vùng có mật độ cao nhất.", isCorrect: false} ], detail: "Đồng bằng sông Hồng có mật độ dân số cao nhất." },
+            { topic: "ĐÔ THỊ HÓA", text: "Quá trình đô thị hóa ở nước ta diễn ra khá nhanh, tuy nhiên tỉ lệ dân thành thị vẫn còn thấp so với mức TB của thế giới.", isTrue: true, subtaskQ: "Tỉ lệ thành thị VN cao hay thấp hơn trung bình TG?", subtaskA: "thấp", reasons: [ {text: "Đúng, tỉ lệ thành thị của ta thấp hơn mức trung bình thế giới.", isCorrect: true}, {text: "Sai, đô thị hóa diễn ra chậm và tỉ lệ thành thị đã vượt trung bình TG.", isCorrect: false}, {text: "Đúng, nguyên nhân chính là do quy mô dân số nước ta quá lớn.", isCorrect: false} ], detail: "Tỉ lệ đô thị hóa đang tăng nhanh nhưng vẫn ở mức thấp." },
+            { topic: "GIỚI TÍNH", text: "Cơ cấu giới tính chung khá cân bằng, tuy nhiên đang có tình trạng mất cân bằng giới tính khi sinh (bé trai nhiều hơn bé gái).", isTrue: true, subtaskQ: "Khi sinh ra, bé trai hay bé gái có tỉ lệ cao hơn?", subtaskA: "bé trai", reasons: [ {text: "Đúng, do sự can thiệp của y tế trong lựa chọn giới tính thai nhi.", isCorrect: true}, {text: "Sai, tỉ lệ nữ luôn cao hơn nam ở mọi lứa tuổi, kể cả khi sinh.", isCorrect: false}, {text: "Đúng, nhưng nguyên nhân chủ yếu do điều kiện tự nhiên tác động.", isCorrect: false} ], detail: "Mất cân bằng giới tính khi sinh là vấn đề nhức nhối hiện nay." },
+            { topic: "LAO ĐỘNG", text: "Phần lớn lực lượng lao động nước ta hiện nay tập trung làm việc ở khu vực Công nghiệp và Xây dựng.", isTrue: false, subtaskQ: "Ngành nào (Nông/Công/Dịch) chiếm tỉ trọng lao động cao nhất?", subtaskA: "nông", reasons: [ {text: "Sai, khu vực Dịch vụ mới thu hút lượng lao động lớn nhất.", isCorrect: false}, {text: "Sai, khu vực Nông - Lâm - Thủy sản vẫn chiếm tỉ trọng lao động cao nhất.", isCorrect: true}, {text: "Đúng, do quá trình CNH-HĐH diễn ra mạnh mẽ thập kỷ qua.", isCorrect: false} ], detail: "Nông - Lâm - Thủy sản vẫn là nơi làm việc của đa số lao động." },
+            { topic: "GIA TĂNG", text: "Tỉ lệ gia tăng dân số có sự chênh lệch lớn giữa các vùng: thành thị có mức sinh cao hơn nhiều so với nông thôn.", isTrue: false, subtaskQ: "Thành thị hay nông thôn có mức sinh cao hơn?", subtaskA: "nông thôn", reasons: [ {text: "Đúng, do điều kiện sống ở thành thị tốt hơn, y tế phát triển hơn.", isCorrect: false}, {text: "Sai, mức sinh ở nông thôn, miền núi thường cao hơn khu vực thành thị.", isCorrect: true}, {text: "Sai, mức sinh giữa các vùng hiện nay đã hoàn toàn cân bằng.", isCorrect: false} ], detail: "Mức sinh ở nông thôn và miền núi vẫn cao hơn thành thị." },
+            { topic: "HỌC VẤN", text: "Trình độ học vấn của dân cư ngày càng nâng cao, tuy nhiên vẫn còn chênh lệch lớn giữa thành thị và nông thôn.", isTrue: true, subtaskQ: "Trình độ học vấn giữa thành thị và nông thôn có khác biệt không (có/không)?", subtaskA: "có", reasons: [ {text: "Đúng, đầu tư cho giáo dục đã cải thiện rõ rệt nhưng phân bố không đều.", isCorrect: true}, {text: "Sai, trình độ học vấn ở nông thôn hiện nay đã ngang bằng thành thị.", isCorrect: false}, {text: "Đúng, nhưng không có sự chênh lệch nào giữa đồng bằng và miền núi.", isCorrect: false} ], detail: "Tỉ lệ biết chữ chung đạt trên 96%, nhưng vẫn chênh lệch theo vùng." },
+            { topic: "THẾ MẠNH", text: "Quy mô dân số đông tạo ra thị trường tiêu thụ rộng lớn và nguồn lao động dồi dào để phát triển kinh tế.", isTrue: true, subtaskQ: "Dân đông mang lại 2 lợi ích: Lao động dồi dào và thị trường ... (điền từ)?", subtaskA: "rộng lớn", reasons: [ {text: "Đúng, đây là sức hút lớn đối với nhà đầu tư và thúc đẩy sản xuất.", isCorrect: true}, {text: "Sai, dân đông chỉ gây áp lực lên tài nguyên và môi trường.", isCorrect: false}, {text: "Đúng, nguyên nhân do lực lượng lao động nước ta đều có trình độ cao.", isCorrect: false} ], detail: "Dân đông là lợi thế kép về cung (lao động) và cầu (tiêu thụ)." },
+            { topic: "HẠN CHẾ", text: "Sự phân bố dân cư không đều gây lãng phí, đồng bằng thiếu tài nguyên trong khi miền núi lại thiếu lao động.", isTrue: true, subtaskQ: "Đồng bằng thừa lao động. Miền núi thừa tài nguyên nhưng thiếu ...?", subtaskA: "lao động", reasons: [ {text: "Đúng, phân bố dân cư ngược với phân bố tài nguyên gây khó khăn.", isCorrect: true}, {text: "Sai, miền núi dư thừa lao động nhưng không có tài nguyên khai thác.", isCorrect: false}, {text: "Đúng, điều này dẫn đến tỉ lệ thất nghiệp ở miền núi cực kì cao.", isCorrect: false} ], detail: "Phân bố không đều làm lãng phí tiềm năng kinh tế." },
+            { topic: "THẤT NGHIỆP", text: "Tỉ lệ thất nghiệp ở khu vực thành thị thường cao hơn nông thôn, trong khi nông thôn có tỉ lệ thiếu việc làm cao hơn.", isTrue: true, subtaskQ: "Khu vực nào đối mặt với tình trạng THIẾU VIỆC LÀM gay gắt hơn?", subtaskA: "nông thôn", reasons: [ {text: "Đúng, thành thị thiếu quỹ đất công nghiệp, nông thôn lại dư thừa quỹ đất.", isCorrect: false}, {text: "Đúng, nông thôn mang tính mùa vụ nông nghiệp nên thời gian nông nhàn nhiều.", isCorrect: true}, {text: "Sai, thành thị mới là nơi có tỉ lệ thiếu việc làm cao nhất do tập trung đông dân.", isCorrect: false} ], detail: "Nông thôn đặc thù mùa vụ nên thiếu việc làm (nông nhàn)." },
+            { topic: "CHẤT LƯỢNG", text: "Hạn chế lớn nhất của nguồn lao động nước ta hiện nay là thể lực và trình độ chuyên môn kỹ thuật chưa cao.", isTrue: true, subtaskQ: "Nguồn lao động nước ta yếu nhất về trí lực hay thể lực?", subtaskA: "thể lực", reasons: [ {text: "Đúng, năng suất lao động thấp do hạn chế về sức khỏe và tay nghề chuyên môn.", isCorrect: true}, {text: "Sai, lao động Việt Nam được đánh giá là có thể lực và tay nghề thuộc top đầu ĐNÁ.", isCorrect: false}, {text: "Đúng, nguyên nhân chủ yếu là do chúng ta chưa mở cửa hội nhập quốc tế.", isCorrect: false} ], detail: "Thể lực và trình độ chuyên môn kĩ thuật (tay nghề) là điểm nghẽn." },
+            { topic: "DÂN TỘC", text: "Việt Nam có 54 dân tộc, trong đó các dân tộc thiểu số phân bố chủ yếu tập trung ở khu vực đồng bằng và ven biển.", isTrue: false, subtaskQ: "Dân tộc thiểu số tập trung chủ yếu ở khu vực địa hình nào?", subtaskA: "núi", reasons: [ {text: "Sai, các dân tộc thiểu số phân bố chủ yếu ở khu vực trung du và miền núi.", isCorrect: true}, {text: "Đúng, khu vực đồng bằng thuận lợi nên thu hút toàn bộ các dân tộc sinh sống.", isCorrect: false}, {text: "Sai, người Kinh mới là dân tộc phân bố chủ yếu ở miền núi và cao nguyên.", isCorrect: false} ], detail: "Dân tộc thiểu số phân bố chủ yếu ở trung du và miền núi." },
+            { topic: "TUỔI THỌ", text: "Nhờ chất lượng cuộc sống được cải thiện, tuổi thọ trung bình của nam giới ở nước ta hiện nay cao hơn nữ giới.", isTrue: false, subtaskQ: "Tuổi thọ trung bình của nam hay nữ cao hơn?", subtaskA: "nữ", reasons: [ {text: "Đúng, do nam giới có sức khỏe thể chất nền tảng tốt hơn nữ giới.", isCorrect: false}, {text: "Sai, giống với xu hướng thế giới, tuổi thọ trung bình của nữ giới luôn cao hơn nam.", isCorrect: true}, {text: "Sai, tuổi thọ của nam và nữ ở nước ta hiện nay đã hoàn toàn ngang bằng nhau.", isCorrect: false} ], detail: "Tuổi thọ nữ (khoảng 76) luôn cao hơn nam (khoảng 71)." },
+            { topic: "CHỈ SỐ HDI", text: "Chỉ số phát triển con người (HDI) của Việt Nam liên tục giảm trong những năm gần đây do tác động của đô thị hóa.", isTrue: false, subtaskQ: "Chỉ số HDI của nước ta có xu hướng tăng hay giảm?", subtaskA: "tăng", reasons: [ {text: "Sai, HDI của nước ta liên tục tăng nhờ cải thiện về y tế, giáo dục và thu nhập.", isCorrect: true}, {text: "Đúng, đô thị hóa quá nhanh làm giảm chất lượng môi trường kéo theo HDI giảm mạnh.", isCorrect: false}, {text: "Sai, chỉ số HDI của Việt Nam đứng bất động không thay đổi trong suốt 10 năm qua.", isCorrect: false} ], detail: "Chỉ số HDI của Việt Nam thuộc nhóm phát triển con người mức cao và đang tăng." },
+            { topic: "CHÍNH SÁCH", text: "Chính sách dân số hiện nay của nước ta chuyển từ tập trung giảm sinh sang duy trì mức sinh thay thế.", isTrue: true, subtaskQ: "Mức sinh thay thế lý tưởng là trung bình một phụ nữ có bao nhiêu con (viết số)?", subtaskA: "2,1", reasons: [ {text: "Đúng, để tránh rơi vào bẫy dân số già và thiếu hụt lao động như các nước phát triển.", isCorrect: true}, {text: "Sai, chính sách hiện nay vẫn ép buộc phải giảm sinh bằng mọi giá ở tất cả các vùng.", isCorrect: false}, {text: "Đúng, vì quy mô dân số nước ta đã bắt đầu giảm dần về mức âm.", isCorrect: false} ], detail: "Nghị quyết 21-NQ/TW chuyển hướng sang duy trì mức sinh thay thế (2,1 con)." },
+            { topic: "VIỆC LÀM", text: "Việc làm đang là một vấn đề kinh tế - xã hội gay gắt ở nước ta chủ yếu do nền kinh tế suy thoái liên tục.", isTrue: false, subtaskQ: "Nguyên nhân gốc rễ gây sức ép việc làm là do quy mô dân số ... (điền từ)?", subtaskA: "đông", reasons: [ {text: "Đúng, kinh tế suy thoái là nguyên nhân duy nhất khiến hàng triệu người thất nghiệp.", isCorrect: false}, {text: "Sai, nguyên nhân cốt lõi là do dân số đông, lao động tăng nhanh nhưng kinh tế chưa theo kịp.", isCorrect: true}, {text: "Sai, việc làm không còn là vấn đề gay gắt do chúng ta đã xuất khẩu hết lao động dư thừa.", isCorrect: false} ], detail: "Sức ép việc làm chủ yếu do dân đông và cơ cấu dân số trẻ." },
+            { topic: "XUẤT CƯ", text: "Tại các vùng xuất cư mạnh như Đồng bằng sông Cửu Long, cơ cấu giới tính có xu hướng tỉ lệ nữ cao hơn nam.", isTrue: true, subtaskQ: "Tại vùng xuất cư, tỉ lệ nữ thường cao hơn hay thấp hơn nam?", subtaskA: "cao", reasons: [ {text: "Sai, nam giới ở lại quê nhà làm nông nghiệp nhiều hơn nên tỉ lệ nam luôn cao hơn.", isCorrect: false}, {text: "Đúng, do nam giới trong độ tuổi lao động có xu hướng di cư đến các khu công nghiệp ĐNB.", isCorrect: true}, {text: "Đúng, nhưng nguyên nhân là do tỉ lệ sinh bé gái ở vùng này cao bất thường.", isCorrect: false} ], detail: "Nam giới di cư đi tìm việc nhiều, để lại tỉ lệ nữ cao hơn ở quê nhà." },
+            { topic: "ĐÔ THỊ", text: "Mạng lưới đô thị nước ta phân bố đồng đều giữa các vùng kinh tế, tạo động lực phát triển cân bằng.", isTrue: false, subtaskQ: "Mạng lưới đô thị nước ta phân bố đồng đều hay không đều?", subtaskA: "không", reasons: [ {text: "Đúng, các đô thị được quy hoạch dàn đều từ miền núi đến đồng bằng theo đúng chuẩn quốc gia.", isCorrect: false}, {text: "Sai, mạng lưới đô thị phân bố rất không đều, tập trung dày đặc ở đồng bằng và ven biển.", isCorrect: true}, {text: "Sai, đô thị phân bố đồng đều nhưng quy mô của chúng lại quá chênh lệch.", isCorrect: false} ], detail: "Mạng lưới đô thị nước ta phân bố không đều, chủ yếu ở ĐB Sông Hồng và Đông Nam Bộ." },
+            { topic: "NĂNG SUẤT", text: "Dù lực lượng lao động dồi dào, năng suất lao động xã hội của nước ta vẫn còn thấp so với nhiều nước trong khu vực.", isTrue: true, subtaskQ: "Năng suất lao động của Việt Nam hiện nay cao hay thấp so với khu vực?", subtaskA: "thấp", reasons: [ {text: "Đúng, nguyên nhân chính là do hệ thống máy móc, công nghệ và trình độ quản lý chưa cao.", isCorrect: true}, {text: "Sai, năng suất lao động của Việt Nam hiện đang dẫn đầu toàn bộ khu vực Đông Nam Á.", isCorrect: false}, {text: "Đúng, do người lao động Việt Nam thường xuyên thiếu ý thức và kỷ luật làm việc.", isCorrect: false} ], detail: "Năng suất lao động đang cải thiện nhưng xuất phát điểm thấp nên vẫn tụt hậu so với khu vực." },
+            { topic: "MẬT ĐỘ", text: "Tây Nguyên hiện là vùng có mật độ dân số thấp nhất cả nước, gây khó khăn cho việc cung cấp lao động tại chỗ.", isTrue: true, subtaskQ: "Vùng nào có mật độ dân số thấp nhất nước ta?", subtaskA: "tây nguyên", reasons: [ {text: "Đúng, với diện tích lớn nhưng dân số ít, Tây Nguyên thiếu hụt lao động khai thác lãnh thổ.", isCorrect: true}, {text: "Sai, vùng Tây Bắc mới là khu vực có mật độ dân số thấp nhất cả nước hiện nay.", isCorrect: false}, {text: "Đúng, nguyên nhân do đây là vùng kinh tế duy nhất không có giao thương quốc tế.", isCorrect: false} ], detail: "Tây Nguyên là vùng có mật độ DS thấp nhất (khoảng trên dưới 100 người/km2)." },
+            { topic: "NGUỒN GỐC", text: "Gia tăng dân số tự nhiên là nguyên nhân chính làm cho quy mô dân số nước ta liên tục tăng trong nhiều thập kỉ qua.", isTrue: true, subtaskQ: "Yếu tố nào đóng vai trò chính làm tăng dân số: tự nhiên hay cơ học?", subtaskA: "tự nhiên", reasons: [ {text: "Sai, gia tăng cơ học (người nước ngoài nhập cư) mới là nguyên nhân chính.", isCorrect: false}, {text: "Đúng, mức sinh tuy giảm nhưng quy mô nữ trong độ tuổi sinh đẻ lớn nên dân số vẫn tăng.", isCorrect: true}, {text: "Đúng, do tỉ lệ tử vong của nước ta đã giảm xuống mức thấp nhất thế giới.", isCorrect: false} ], detail: "Gia tăng tự nhiên (Sinh - Tử) vẫn là động lực chính của quy mô DS nước ta." },
+            { topic: "XU HƯỚNG", text: "Xu hướng hiện nay trong cơ cấu lao động theo ngành là tỉ trọng lao động nông nghiệp tăng, công nghiệp giảm.", isTrue: false, subtaskQ: "Tỉ trọng lao động nông nghiệp đang có xu hướng tăng hay giảm?", subtaskA: "giảm", reasons: [ {text: "Đúng, do đại dịch khiến công nhân mất việc phải quay về quê hương làm nông.", isCorrect: false}, {text: "Sai, quá trình công nghiệp hóa làm tỉ trọng nông nghiệp giảm, công nghiệp dịch vụ tăng.", isCorrect: true}, {text: "Sai, cơ cấu lao động theo ngành của nước ta hầu như không có sự thay đổi.", isCorrect: false} ], detail: "Nông-lâm-thủy sản giảm, Công nghiệp-Xây dựng và Dịch vụ tăng." },
+            { topic: "PHỤ THUỘC", text: "Tỉ trọng dân số trong độ tuổi lao động tăng lên làm cho tỉ lệ dân số phụ thuộc của nước ta giảm xuống mức rất thấp.", isTrue: true, subtaskQ: "Nhờ cơ cấu vàng, tỉ lệ dân số phụ thuộc của nước ta hiện nay cao hay thấp?", subtaskA: "thấp", reasons: [ {text: "Đúng, đây là lợi thế lớn nhất của thời kỳ cơ cấu dân số vàng để bứt phá kinh tế.", isCorrect: true}, {text: "Sai, dân số phụ thuộc vẫn rất cao do chi phí nuôi dưỡng người già quá đắt đỏ.", isCorrect: false}, {text: "Đúng, nhưng nguyên nhân là do giới trẻ hiện nay từ chối việc sinh con hoàn toàn.", isCorrect: false} ], detail: "Cơ cấu dân số vàng tức là tỉ lệ người lao động gấp đôi tỉ lệ người phụ thuộc." },
+            { topic: "CHẤT LƯỢNG", text: "Người lao động Việt Nam có đặc điểm cần cù, sáng tạo nhưng lại thiếu tác phong công nghiệp và kỷ luật lao động.", isTrue: true, subtaskQ: "Đặc điểm yếu kém nổi bật của lao động VN khi hội nhập là tác phong ... (điền từ)?", subtaskA: "công nghiệp", reasons: [ {text: "Đúng, đây là rào cản lớn khi bước vào môi trường sản xuất hiện đại, đòi hỏi tuân thủ nghiêm ngặt.", isCorrect: true}, {text: "Sai, lao động Việt Nam được các công ty đa quốc gia đánh giá có kỷ luật thép tốt nhất.", isCorrect: false}, {text: "Đúng, nhưng điều này không ảnh hưởng đến khả năng thu hút đầu tư nước ngoài.", isCorrect: false} ], detail: "Người lao động vẫn chịu ảnh hưởng của nếp sống sản xuất nhỏ nông nghiệp." }
+        ];
+
+        let deck = [], currentQ = null, qIndex = 0;
+        let wallet = 1000;
+        let currentBet = 0, selectedReasonCorrect = null;
+        let historyLog = [];
+        let timerInterval = null, timeLeft = 0;
+
+        // --- ĐƯA LỆNH KÍCH HOẠT ÂM THANH GẮN TRỰC TIẾP VÀO NÚT BẮT ĐẦU (BYPASS POLICY) ---
+        function startGame() {
+            let n = document.getElementById('player-name').value.trim();
+            let c = document.getElementById('player-class').value.trim();
+            if(!n || !c) { alert("Sĩ tử vui lòng ghi danh tính và phủ/huyện trước khi ứng thí!"); return; }
+
+            // Bẻ khóa Audio Policy ngay trong sự kiện Click hợp lệ
+            try {
+                for (const id in audioUrls) {
+                    let a = document.getElementById(id);
+                    if(a) {
+                        a.volume = 0;
+                        let p = a.play();
+                        if(p !== undefined) {
+                            p.then(() => { a.pause(); a.currentTime = 0; a.volume = 1; }).catch(e=>console.log(e));
+                        }
+                    }
+                }
+            } catch(e) {}
+
+            // Chạy game sau 50ms để luồng Audio kịp giải phóng
+            setTimeout(() => {
+                wallet = 1000; qIndex = 0; historyLog = [];
+                deck = JSON.parse(JSON.stringify(rawData)).sort(() => Math.random() - 0.5).slice(0, 10);
+                
+                playSFX('sfx-click');
+                playBGM('bgm-game', 0.5);
+                
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+                document.getElementById('game-screen').classList.add('active-screen');
+                updateWallet(0); nextQuestion();
+            }, 50);
+        }
+
+        function updateWallet(amount) {
+            wallet += amount;
+            document.getElementById('wallet-display').innerText = wallet;
+        }
+
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            timeLeft = seconds;
+            let totalTime = seconds;
+            const bar = document.getElementById('timer-bar');
+            document.getElementById('timer-bar-container').style.display = 'block';
+            bar.classList.remove('timer-warning');
+            bar.style.width = '100%';
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let percent = (timeLeft / totalTime) * 100;
+                bar.style.width = `${percent}%`;
+                
+                if(timeLeft <= 5) {
+                    bar.classList.add('timer-warning');
+                    if(timeLeft > 0) playSFX('sfx-alarm', 0.4);
+                }
+                
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    evaluate(false, "HẾT GIỜ KHOA THI! Sĩ tử đã chậm trễ.");
+                }
+            }, 1000);
+        }
+
+        function nextQuestion() {
+            clearInterval(timerInterval);
+            document.getElementById('timer-bar-container').style.display = 'none';
+            document.getElementById('bet-result-modal').style.display = 'none';
+            
+            document.getElementById('live-mascot-container').style.display = 'flex';
+            
+            if(wallet <= 0 || deck.length === 0) { endGame(); return; }
+
+            currentQ = deck.pop(); qIndex++;
+            document.getElementById('q-counter').innerText = `${qIndex}/10`;
+            
+            document.getElementById('q-topic').innerText = currentQ.topic;
+            const hooks = ["Vấn đề này nhìn có vẻ dễ, nhưng coi chừng sập bẫy!", "Nở hoa hay bế tắc? Cược lớn nếu sĩ tử thực sự hiểu bản chất!", "Hãy cẩn thận, có bẫy ngầm trong cách dùng từ!", "Đừng để chữ nghĩa đánh lừa. Phân tích kĩ nhé!"];
+            document.getElementById('q-text').innerHTML = `<i style="color:var(--vn-gold); font-size:13px;">"${hooks[Math.floor(Math.random()*hooks.length)]}"</i><br><br>${currentQ.text}`;
+            
+            document.getElementById('bet-panel').style.display = 'flex';
+            document.getElementById('task-panel').style.display = 'none';
+            ['task-100', 'task-300', 'task-500'].forEach(id => document.getElementById(id).style.display = 'none');
+            stopBGM('sfx-heartbeat');
+            
+            changeLiveMascot('idle');
+        }
+
+        window.selectBet = function(amount) {
+            if(wallet < amount) {
+                alert(`Sĩ tử chỉ còn ${wallet} XU. Không đủ để cược mức này!`); return;
+            }
+            playSFX('sfx-click');
+            currentBet = amount;
+            document.getElementById('bet-panel').style.display = 'none';
+            document.getElementById('task-panel').style.display = 'flex';
+            
+            if(amount === 100) {
+                changeLiveMascot('bet100');
+                document.getElementById('task-title').innerText = "CHỐT NHANH (10 Giây)";
+                document.getElementById('task-100').style.display = 'flex';
+                startTimer(10);
+            } else if(amount === 300) {
+                changeLiveMascot('bet300');
+                document.getElementById('task-title').innerText = "NHIỆM VỤ PHỤ (20 Giây)";
+                document.getElementById('task-300').style.display = 'flex';
+                document.getElementById('subtask-q-300').innerText = currentQ.subtaskQ;
+                document.getElementById('subtask-input-300').value = "";
+                startTimer(20);
+            } else if(amount === 500) {
+                changeLiveMascot('bet500');
+                document.getElementById('task-title').innerText = "NHIỆM VỤ KÉP (30 Giây)";
+                document.getElementById('task-500').style.display = 'flex';
+                
+                document.getElementById('subtask-q-500').innerText = currentQ.subtaskQ;
+                document.getElementById('subtask-input-500').value = "";
+
+                playBGM('sfx-heartbeat', 0.8); 
+                startTimer(30); 
+                
+                let rList = document.getElementById('reason-list');
+                rList.innerHTML = ""; selectedReasonCorrect = null;
+                let shuffledReasons = JSON.parse(JSON.stringify(currentQ.reasons)).sort(()=> Math.random()-0.5);
+                shuffledReasons.forEach(r => {
+                    let btn = document.createElement('button');
+                    btn.className = 'ans-btn';
+                    btn.innerText = r.text;
+                    btn.onclick = function() {
+                        document.querySelectorAll('#reason-list .ans-btn').forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        selectedReasonCorrect = r.isCorrect;
+                    }
+                    rList.appendChild(btn);
+                });
+            }
+        }
+
+        window.submitAnswer = function(ansStr) {
+            clearInterval(timerInterval);
+            let playerAns = ansStr === 'true';
+            evaluate(playerAns === currentQ.isTrue);
+        }
+
+        window.submitAnswer300 = function(ansStr) {
+            let subAns = document.getElementById('subtask-input-300').value.trim().toLowerCase();
+            if(subAns === "") { alert("Sĩ tử vui lòng nhập từ khóa nhiệm vụ phụ!"); return; }
+            clearInterval(timerInterval);
+            
+            let playerAns = ansStr === 'true';
+            let isSubCorrect = subAns.includes(currentQ.subtaskA.toLowerCase());
+            let isFullyCorrect = (playerAns === currentQ.isTrue) && isSubCorrect;
+            evaluate(isFullyCorrect, !isSubCorrect ? "Nhiệm vụ phụ sai từ khóa." : null);
+        }
+
+        window.submitAnswer500 = function() {
+            let subAns = document.getElementById('subtask-input-500').value.trim().toLowerCase();
+            if(subAns === "") { alert("Sĩ tử vui lòng nhập từ khóa nhiệm vụ!"); return; }
+            if(selectedReasonCorrect === null) { alert("Vui lòng chọn 1 luận điểm!"); return; }
+            
+            clearInterval(timerInterval);
+            stopBGM('sfx-heartbeat');
+
+            let isSubCorrect = subAns.includes(currentQ.subtaskA.toLowerCase());
+            let isReasonCorrect = selectedReasonCorrect;
+            let isFullyCorrect = isSubCorrect && isReasonCorrect;
+
+            let failMsg = null;
+            if(!isFullyCorrect) {
+                if(!isSubCorrect && !isReasonCorrect) failMsg = "Sai từ khóa và sai lập luận.";
+                else if(!isSubCorrect) failMsg = "Lập luận đúng nhưng sai từ khóa phụ.";
+                else failMsg = "Đúng từ khóa nhưng lập luận sai bản chất.";
+            }
+
+            evaluate(isFullyCorrect, failMsg);
+        }
+
+        function evaluate(isWin, customFailReason = null) {
+            clearInterval(timerInterval);
+            document.getElementById('live-mascot-container').style.display = 'none'; 
+            document.getElementById('bet-result-modal').style.display = 'flex';
+            
+            const box = document.getElementById('res-box');
+            const mascot = document.getElementById('res-mascot');
+            const title = document.getElementById('res-title');
+            const coin = document.getElementById('res-coin-text');
+            const detail = document.getElementById('res-detail');
+
+            box.className = "result-box";
+            let logMsg = ""; let logClass = "";
+
+            if(isWin) {
+                playSFX('sfx-coin'); updateWallet(currentBet);
+                box.classList.add('win');
+                title.innerText = "NỞ HOA!"; title.style.color = "var(--vn-gold)";
+                coin.innerText = `+${currentBet} XU`; coin.style.color = "var(--vn-gold)";
+                
+                mascot.innerText = "🤩"; mascot.style.borderColor = "var(--vn-gold)";
+                
+                detail.innerText = `Chính xác! ${currentQ.detail}`;
+                
+                if(currentBet === 500) logMsg = `[+500] Hoàn thành Nhiệm vụ kép xuất sắc (Câu: ${currentQ.topic})`;
+                else if(currentBet === 300) logMsg = `[+300] Khá tự tin & Xử lý tốt (Câu: ${currentQ.topic})`;
+                else logMsg = `[+100] Cẩn trọng & Chính xác (Câu: ${currentQ.topic})`;
+                logClass = "safe";
+            } else {
+                playSFX('sfx-lose'); playSFX('sfx-alarm', 0.5);
+                updateWallet(-currentBet);
+                box.classList.add('lose');
+                title.innerText = "BẾ TẮC!"; title.style.color = "var(--danger)";
+                coin.innerText = `-${currentBet} XU`; coin.style.color = "var(--danger)";
+                
+                if(currentBet === 500) { mascot.innerText = "😭"; mascot.style.borderColor = "var(--danger)"; }
+                else { mascot.innerText = "😵"; mascot.style.borderColor = "var(--orange)"; }
+                
+                let errText = customFailReason ? customFailReason : "Lập luận sai lệch hoặc sập bẫy ngầm.";
+                detail.innerText = `${errText} Thực tế: ${currentQ.detail}`;
+
+                if(currentBet === 500) logMsg = `[-500] ⚠️ LƯU Ý: Rất tự tin cược 500 nhưng hổng kiến thức (Câu: ${currentQ.topic})`;
+                else logMsg = `[-${currentBet}] Nhầm lẫn kiến thức (Câu: ${currentQ.topic})`;
+                logClass = "danger";
+            }
+
+            historyLog.push(`<div class="hist-item ${logClass}">${logMsg}</div>`);
+        }
+
+        const privilegesList = [
+            "+0.5 điểm trực tiếp vào cột điểm Thường xuyên tiếp theo.",
+            "Bỏ qua lỗi tô mã đề khi làm kiểm tra giấy.",
+            "Bỏ qua lỗi tô sai đáp án phần Trả lời ngắn.",
+            "Hủy 1 đầu điểm kiểm tra Thường xuyên thấp nhất."
+        ];
+
+        function endGame() {
+            stopBGM('bgm-game'); playSFX('sfx-cheer'); triggerConfetti();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById('result-screen').classList.add('active-screen');
+            document.getElementById('live-mascot-container').style.display = 'none';
+            
+            document.getElementById('final-agent').innerText = `${document.getElementById('player-name').value} | ${document.getElementById('player-class').value}`;
+            document.getElementById('final-wallet').innerText = wallet;
+            
+            let b = document.getElementById('final-bonus');
+            
+            document.getElementById('black-card').style.display = 'none';
+            document.getElementById('silver-card').style.display = 'none';
+            
+            if(wallet >= 3000) {
+                b.innerHTML = "XUẤT SẮC: THỈNH ĐƯỢC THẺ ĐEN TỐI THƯỢNG!"; b.style.color = "var(--success)";
+                document.getElementById('black-card').style.display = 'flex';
+            } else if (wallet >= 1500) {
+                b.innerHTML = "LỢI NHUẬN TỐT: THỈNH ĐƯỢC THẺ BẠC HỘ VỆ!"; b.style.color = "var(--vn-gold)";
+                document.getElementById('silver-card').style.display = 'flex';
+                let randomPrivilege = privilegesList[Math.floor(Math.random() * privilegesList.length)];
+                document.getElementById('silver-privilege').innerText = randomPrivilege;
+            } else {
+                b.innerHTML = "CHƯA ĐẠT CHUẨN: KHÔNG ĐỦ ĐIỀU KIỆN NHẬN THẺ"; b.style.color = "var(--danger)";
+            }
+
+            document.getElementById('history-list').innerHTML = historyLog.reverse().join('');
+        }
+
+        document.getElementById('capture-btn').addEventListener('click', function() {
+            const btn = this; const orig = btn.innerText; btn.innerText = "⏳ ĐANG XUẤT CHỨNG CHỈ..."; btn.disabled = true;
+            html2canvas(document.getElementById('capture-area'), { backgroundColor: "#1e0500", scale: 2 }).then(canvas => {
+                const link = document.createElement('a'); link.href = canvas.toDataURL("image/png");
+                link.download = `BangVang_${document.getElementById('player-name').value}.png`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                btn.innerText = "✅ HOÀN TẤT"; setTimeout(() => { btn.innerText = orig; btn.disabled = false; }, 3000);
+            });
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', () => { 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById('login-screen').classList.add('active-screen'); 
+            // Không bật nhạc menu lại ngay lập tức để tránh lỗi nếu chưa tương tác
+        });
+
+        function triggerConfetti() {
+            var duration = 3 * 1000; var end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#8B0000', '#FFD700'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#8B0000', '#FFD700'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+    </script>
+</body>
+</html>
